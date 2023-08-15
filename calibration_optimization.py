@@ -1,16 +1,19 @@
-from gurobipy import *
+from gurobipy import * # Requires Gurobi installed
 import numpy as np
 
-def run_model2(run_no,params):
+def run_model2(run_no,params): ## solve optimization problem for each user
     x_values= []
     for u in range(0,params['U']): ## this loop could be distributed to several machines, solve for every user u
         mm = Model('Opt')
         strii = str("mylog"+str(run_no)+".txt")
-        mm.setParam(GRB.Param.TimeLimit, 600)
+        mm.setParam(GRB.Param.TimeLimit, 600) # Time limit can be included 
         
-        x = []; y =[]; I = params["I"]; R = params["R"]
-        x = mm.addVars(1,I, obj=params["u"][u*I:(u+1)*I], vtype=GRB.BINARY, name = "x")
-        y = mm.addVars(R,1, lb=0.0, obj= (params['calib'][:,u]+1)*params["alpha"]/2, vtype=GRB.CONTINUOUS, name = "y")
+        x = [] # decision variable of offering an item i to user u
+        y = [] # auxiliary decision variable of weighted total variation penalty
+        I = params["I"]; R = params["R"]
+        x = mm.addVars(1,I, obj=params["u"][u*I:(u+1)*I], vtype=GRB.BINARY, name = "x") 
+        y = mm.addVars(R,1, lb=0.0, obj= (params['calib'][:,u]+1)*params["alpha"]/2, vtype=GRB.CONTINUOUS, name = "y") 
+        
         
         ####CONSTRAINTS
         mm.addConstr(quicksum(x[0,i] for i in range(I)) == params["k"]) ###Top-k selection constraint
@@ -45,7 +48,7 @@ def main2(run_no, alpha_value, params_k, initial_calibrations, genre_fuzz):
     return model, dvar, params
 
 count=0
-for run_no in range(1):
+for run_no in range(1): ## Can be run with multiple seeds provided
     ### these two files will be required:
     initial_calibrations = np.load('Calibration_file.npy') #Genre times User: 
     ##Percentage of each genre for every user that we are trying to match. Comes from user history.
